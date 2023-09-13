@@ -101,7 +101,7 @@ findPthreadTidOffset(
         uintptr_t buffer[200];
         manager->copyObjectFromProcess(pthread_id_addr, &buffer);
         for (int ctid : manager->Tids()) {
-            for (int i = 0; i < 200; i++) {
+            for (int i = 0; i < 400; i++) {
                 if (static_cast<pid_t>(buffer[i]) == ctid) {
                     off_t offset = sizeof(uintptr_t) * i;
                     LOG(DEBUG) << "Tid offset located by scanning at offset " << std::showbase << std::hex
