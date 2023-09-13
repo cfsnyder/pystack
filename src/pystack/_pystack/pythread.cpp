@@ -72,12 +72,14 @@ findPthreadTidOffset(
         std::vector<off_t> glibc_pthread_offset_candidates = {
                 offsetof(_pthread_structure_with_simple_header, tid),
                 offsetof(_pthread_structure_with_tcbhead, tid)};
-        for (off_t candidate : glibc_pthread_offset_candidates) {
-            manager->copyObjectFromProcess((remote_addr_t)(pthread_id_addr + candidate), &the_tid);
-            if (the_tid == manager->Pid()) {
-                LOG(DEBUG) << "Tid offset located using GLIBC offsets at offset " << std::showbase
-                           << std::hex << candidate << " in pthread structure";
-                return candidate;
+        for (int ctid : manager->Tids()) {
+            for (off_t candidate : glibc_pthread_offset_candidates) {
+                manager->copyObjectFromProcess((remote_addr_t)(pthread_id_addr + candidate), &the_tid);
+                if (the_tid == ctid) {
+                    LOG(DEBUG) << "Tid offset located using GLIBC offsets at offset " << std::showbase
+                               << std::hex << candidate << " in pthread structure";
+                    return candidate;
+                }
             }
         }
         remote_addr_t next_thread_addr = manager->getField(current_thread, &py_thread_v::o_next);
@@ -98,12 +100,14 @@ findPthreadTidOffset(
         // Attempt to locate a field in the pthread struct that's equal to the pid.
         uintptr_t buffer[200];
         manager->copyObjectFromProcess(pthread_id_addr, &buffer);
-        for (int i = 0; i < 200; i++) {
-            if (static_cast<pid_t>(buffer[i]) == manager->Pid()) {
-                off_t offset = sizeof(uintptr_t) * i;
-                LOG(DEBUG) << "Tid offset located by scanning at offset " << std::showbase << std::hex
-                           << offset << " in pthread structure";
-                return offset;
+        for (int ctid : manager->Tids()) {
+            for (int i = 0; i < 200; i++) {
+                if (static_cast<pid_t>(buffer[i]) == ctid) {
+                    off_t offset = sizeof(uintptr_t) * i;
+                    LOG(DEBUG) << "Tid offset located by scanning at offset " << std::showbase << std::hex
+                               << offset << " in pthread structure";
+                    return offset;
+                }
             }
         }
 
